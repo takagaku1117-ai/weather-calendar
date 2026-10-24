@@ -90,7 +90,7 @@ export default function ForecastCalendar({ days, today, selected, onSelect }: Pr
             return (
               <div
                 key={date}
-                className="flex min-h-16 items-start justify-center pt-2 text-sm text-ink-faint/60"
+                className="flex min-h-10 items-start justify-center pt-2 text-sm text-ink-faint/60"
               >
                 {dayNum}
               </div>

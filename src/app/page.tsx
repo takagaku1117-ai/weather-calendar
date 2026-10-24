@@ -241,8 +241,12 @@ export default function Home() {
                   </li>
                 ))}
               </ol>
-              {day.date === data.today && day.hours.length < 8 && (
-                <p className="mt-1 text-sm text-ink-faint">今日の分は、これから先の時間帯だけ表示しています。</p>
+              {day.hours.length < 8 && (
+                <p className="mt-1 text-sm text-ink-faint">
+                  {day.date === data.today
+                    ? "今日の分は、これから先の時間帯だけ表示しています。"
+                    : "無料の予報は5日先までなので、この日はデータがある時間帯だけ表示しています。"}
+                </p>
               )}
             </section>
           )}
