@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import ForecastCalendar from "@/components/ForecastCalendar";
-import { formatDate, iconToEmoji, type WeatherResponse } from "@/lib/weather";
+import { adviceFor, formatDate, iconToEmoji, type WeatherResponse } from "@/lib/weather";
 
 const QUICK_CITIES = ["東京", "大阪", "札幌", "福岡", "那覇"];
 const STORAGE_KEY = "weather-last-city";
@@ -85,6 +85,7 @@ export default function Home() {
   }
 
   const day = data?.days.find((d) => d.date === selected);
+  const advice = day && adviceFor(day);
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-8 sm:py-12">
@@ -212,6 +213,17 @@ export default function Home() {
                   <dd className="text-xl font-bold">{day.humidity}%</dd>
                 </div>
               </dl>
+
+              {advice && (
+                <div className="mt-4 rounded-xl border border-accent bg-accent-soft p-4">
+                  <h3 className="mb-2 font-bold">お出かけアドバイス</h3>
+                  <ul className="space-y-1.5">
+                    <li>{advice.umbrella}</li>
+                    <li>{advice.clothes}</li>
+                    {advice.note && <li>{advice.note}</li>}
+                  </ul>
+                </div>
+              )}
 
               <h3 className="mt-5 mb-2 font-bold">3時間ごと</h3>
               <ol className="flex gap-2 overflow-x-auto pb-2">
