@@ -1,10 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import ForecastCalendar from "@/components/ForecastCalendar";
-import { adviceFor, formatDate, iconToEmoji, type WeatherResponse } from "@/lib/weather";
+import HourlyChart from "@/components/HourlyChart";
+import { getServerSnapshot, getSnapshot, subscribe, toggleFavorite } from "@/lib/favorites";
+import { adviceFor, formatDate, iconToEmoji, laundryFor, type WeatherResponse } from "@/lib/weather";
 
-const QUICK_CITIES = ["東京", "大阪", "札幌", "福岡", "那覇"];
+// 日本語の短い地名だと同じ漢字の海外の地名が先に見つかる（「福岡」→中国の仏岡県など）ので、
+// 検索には英語名＋国コードを使う
+const QUICK_CITIES = [
+  { label: "東京", query: "Tokyo,JP" },
+  { label: "大阪", query: "Osaka,JP" },
+  { label: "札幌", query: "Sapporo,JP" },
+  { label: "福岡", query: "Fukuoka,JP" },
+  { label: "那覇", query: "Naha,JP" },
+];
 const STORAGE_KEY = "weather-last-city";
 
 type Query = { city: string } | { lat: number; lon: number };
@@ -25,6 +35,8 @@ export default function Home() {
   const [selected, setSelected] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const favorites = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const show = useCallback((weather: WeatherResponse, query: Query) => {
     setData(weather);
@@ -43,6 +55,7 @@ export default function Home() {
   }, []);
 
   function load(query: Query) {
+    setNotice("");
     setLoading(true);
     setError("");
     fetchWeather(query).then((w) => show(w, query), showError);
@@ -86,6 +99,14 @@ export default function Home() {
 
   const day = data?.days.find((d) => d.date === selected);
   const advice = day && adviceFor(day);
+  const laundry = day && laundryFor(day);
+  const isFavorite = !!data && favorites.includes(data.place);
+
+  function handleFavorite() {
+    if (!data) return;
+    const added = toggleFavorite(data.place);
+    setNotice(added ? `★ ${data.place}をお気に入りに追加しました` : `${data.place}をお気に入りから外しました`);
+  }
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-8 sm:py-12">
@@ -114,6 +135,36 @@ export default function Home() {
         </button>
       </form>
 
+      {/* お気に入りの街。いちばんよく使うので、検索欄のすぐ下に置く */}
+      <section aria-labelledby="fav-heading" className="mt-4">
+        <h2 id="fav-heading" className="mb-2 text-sm font-bold text-ink-soft">
+          ★ お気に入り
+        </h2>
+        {favorites.length === 0 ? (
+          <p className="text-sm text-ink-faint">街の名前の横にある「☆ お気に入り」を押すと、ここに並びます。</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {favorites.map((city) => (
+              <button
+                key={city}
+                type="button"
+                onClick={() => load({ city })}
+                disabled={loading}
+                aria-current={data?.place === city ? "true" : undefined}
+                className={`h-11 rounded-full border px-4 text-sm font-bold disabled:opacity-60 ${
+                  data?.place === city
+                    ? "border-star bg-star-soft text-ink"
+                    : "border-star/60 bg-surface text-ink hover:border-star"
+                }`}
+              >
+                <span aria-hidden className="mr-1 text-star">★</span>
+                {city}
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
@@ -123,21 +174,22 @@ export default function Home() {
         >
           📍 現在地
         </button>
-        {QUICK_CITIES.map((city) => (
+        {QUICK_CITIES.map(({ label, query }) => (
           <button
-            key={city}
+            key={label}
             type="button"
-            onClick={() => load({ city })}
+            onClick={() => load({ city: query })}
             disabled={loading}
             className="h-11 rounded-full border border-line bg-surface px-4 text-sm hover:border-accent disabled:opacity-60"
           >
-            {city}
+            {label}
           </button>
         ))}
       </div>
 
       <div aria-live="polite" className="mt-4 min-h-6">
         {loading && <p className="text-ink-soft">天気を取りに行っています…</p>}
+        {notice && !loading && !error && <p className="text-ink-soft">{notice}</p>}
         {error && !loading && (
           <p role="alert" className="rounded-xl bg-danger-soft px-4 py-3 text-danger">
             ⚠️ {error}
@@ -149,7 +201,17 @@ export default function Home() {
         <div className={`mt-2 space-y-5 transition-opacity ${loading ? "opacity-50" : ""}`}>
           {/* いまの天気 */}
           <section className="rounded-2xl bg-accent p-5 text-white shadow-md">
-            <p className="text-sm opacity-90">いまの {data.place}</p>
+            <div className="flex items-start justify-between gap-3">
+              <p className="pt-2 text-sm opacity-90">いまの {data.place}</p>
+              <button
+                type="button"
+                onClick={handleFavorite}
+                aria-pressed={isFavorite}
+                className="h-11 shrink-0 rounded-full bg-white/15 px-4 text-sm font-bold hover:bg-white/25"
+              >
+                {isFavorite ? "★ お気に入り済み" : "☆ お気に入り"}
+              </button>
+            </div>
             <div className="mt-1 flex items-center gap-4">
               <span className="text-6xl leading-none" aria-hidden>
                 {iconToEmoji(data.current.icon)}
@@ -221,11 +283,20 @@ export default function Home() {
                     <li>{advice.umbrella}</li>
                     <li>{advice.clothes}</li>
                     {advice.note && <li>{advice.note}</li>}
+                    {laundry && (
+                      <li>
+                        {laundry.label}
+                        <span className="ml-1 text-sm text-ink-soft">（{laundry.reason}）</span>
+                      </li>
+                    )}
                   </ul>
                 </div>
               )}
 
-              <h3 className="mt-5 mb-2 font-bold">3時間ごと</h3>
+              <h3 className="mt-5 font-bold">3時間ごとのグラフ</h3>
+              <HourlyChart hours={day.hours} />
+
+              <h3 className="mt-4 mb-2 font-bold">3時間ごとの天気</h3>
               <ol className="flex gap-2 overflow-x-auto pb-2">
                 {day.hours.map((h) => (
                   <li

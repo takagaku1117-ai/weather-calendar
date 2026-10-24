@@ -93,3 +93,21 @@ export function adviceFor(day: DayForecast): Advice {
 
   return { umbrella, clothes, note };
 }
+
+export type Laundry = { level: "good" | "ok" | "bad"; label: string; reason: string };
+
+// 洗濯物を外に干す時間帯（9時〜15時）の降水確率と湿度で、乾きやすさを3段階にする
+export function laundryFor(day: DayForecast): Laundry {
+  const daytime = day.hours.filter((h) => h.time >= "09:00" && h.time <= "15:00");
+  // 今日の夕方以降など昼のデータがないときは、ある時間帯で判断する
+  const hours = daytime.length > 0 ? daytime : day.hours;
+  const pop = Math.max(...hours.map((h) => h.pop));
+  const reason = `昼の降水確率 最大${pop}%・湿度${day.humidity}%`;
+  if (pop < 20 && day.humidity < 70) {
+    return { level: "good", label: "👕 洗濯びより！外干しでよく乾きます", reason };
+  }
+  if (pop < 40 && day.humidity < 80) {
+    return { level: "ok", label: "👕 外干しOK。乾きにくいので早めに取り込もう", reason };
+  }
+  return { level: "bad", label: "🏠 部屋干しがおすすめ", reason };
+}

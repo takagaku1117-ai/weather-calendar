@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { iconToEmoji, type DayForecast } from "@/lib/weather";
+import { iconToEmoji, laundryFor, type DayForecast } from "@/lib/weather";
 
 type Props = {
   days: DayForecast[];
@@ -97,13 +97,14 @@ export default function ForecastCalendar({ days, today, selected, onSelect }: Pr
             );
           }
 
+          const laundryGood = laundryFor(day).level === "good";
           return (
             <button
               key={date}
               type="button"
               onClick={() => onSelect(date)}
               aria-pressed={isSelected}
-              aria-label={`${m}月${dayNum}日 ${day.description} 最高${day.max}度`}
+              aria-label={`${m}月${dayNum}日 ${day.description} 最高${day.max}度${laundryGood ? " 洗濯びより" : ""}`}
               className={`flex min-h-16 flex-col items-center justify-start gap-0.5 rounded-xl pt-1.5 pb-1 text-sm transition ${
                 isSelected
                   ? "bg-accent text-white shadow-md"
@@ -118,6 +119,11 @@ export default function ForecastCalendar({ days, today, selected, onSelect }: Pr
                 {iconToEmoji(day.icon)}
               </span>
               <span className="text-xs">{day.max}°</span>
+              {laundryGood && (
+                <span className="text-xs leading-none" aria-hidden>
+                  👕
+                </span>
+              )}
             </button>
           );
         })}
@@ -126,6 +132,7 @@ export default function ForecastCalendar({ days, today, selected, onSelect }: Pr
       <p className="mt-3 text-sm text-ink-faint">
         色のついた日（今日から5日先まで）をタップすると、その日の予報に切り替わります。
       </p>
+      <p className="mt-1 text-sm text-ink-faint">👕 は洗濯びより（昼に雨が降りにくく、湿度も低い日）です。</p>
     </section>
   );
 }

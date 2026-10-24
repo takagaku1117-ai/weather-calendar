@@ -15,6 +15,8 @@
   --sat: #1d4ed8;
   --danger: #b42318;
   --danger-soft: #fdecea;
+  --star: #b7791f;
+  --star-soft: #fdf3dc;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -32,6 +34,8 @@
     --sat: #7aa2f5;
     --danger: #ff8a7a;
     --danger-soft: #3b2220;
+    --star: #f6c343;
+    --star-soft: #3a2f14;
   }
 }
 
@@ -49,6 +53,8 @@
   --color-sat: var(--sat);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-star: var(--star);
+  --color-star-soft: var(--star-soft);
   --font-sans: var(--font-noto-sans-jp), "Hiragino Sans", "Yu Gothic", sans-serif;
 }
 
