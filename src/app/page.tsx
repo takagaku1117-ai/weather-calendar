@@ -4,7 +4,14 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import ForecastCalendar from "@/components/ForecastCalendar";
 import HourlyChart from "@/components/HourlyChart";
 import { getServerSnapshot, getSnapshot, subscribe, toggleFavorite } from "@/lib/favorites";
-import { adviceFor, formatDate, iconToEmoji, laundryFor, type WeatherResponse } from "@/lib/weather";
+import {
+  adviceFor,
+  formatDate,
+  iconToEmoji,
+  laundryFor,
+  rainTimeline,
+  type WeatherResponse,
+} from "@/lib/weather";
 
 // 日本語の短い地名だと同じ漢字の海外の地名が先に見つかる（「福岡」→中国の仏岡県など）ので、
 // 検索には英語名＋国コードを使う
@@ -100,6 +107,7 @@ export default function Home() {
   const day = data?.days.find((d) => d.date === selected);
   const advice = day && adviceFor(day);
   const laundry = day && laundryFor(day);
+  const rain = day ? rainTimeline(day) : [];
   const isFavorite = !!data && favorites.includes(data.place);
 
   function handleFavorite() {
@@ -256,6 +264,27 @@ export default function Home() {
                   {iconToEmoji(day.icon)}
                 </span>
                 <p className="text-xl font-bold">{day.description}</p>
+              </div>
+
+              {/* 何時に出れば濡れないかを、グラフを読まなくても分かるように文で出す */}
+              <div
+                className={`mt-4 rounded-xl border p-4 ${
+                  rain.length > 0 ? "border-accent bg-accent-soft" : "border-line bg-background"
+                }`}
+              >
+                <h3 className="font-bold">雨の時間</h3>
+                {rain.length > 0 ? (
+                  <ul className="mt-1 space-y-1">
+                    {rain.map((text) => (
+                      <li key={text} className="text-lg font-bold">
+                        ☔ {text}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-1 text-lg font-bold">🙆 雨が降りそうな時間はありません</p>
+                )}
+                <p className="mt-1 text-sm text-ink-soft">降水確率50%以上の時間帯を「雨」としています。</p>
               </div>
               <dl className="mt-4 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
                 <div className="rounded-xl bg-background py-3">

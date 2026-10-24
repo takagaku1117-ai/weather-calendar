@@ -111,3 +111,27 @@ export function laundryFor(day: DayForecast): Laundry {
   }
   return { level: "bad", label: "🏠 部屋干しがおすすめ", reason };
 }
+
+// 3時間ごとの予報から「何時ごろ降り始めて、何時ごろやむか」を文にする。
+// 雨かどうかは、傘のアドバイスと同じく降水確率50%以上で判断する
+export function rainTimeline(day: DayForecast): string[] {
+  const { hours } = day;
+  const spans: string[] = [];
+  let i = 0;
+  while (i < hours.length) {
+    if (hours[i].pop < 50) {
+      i++;
+      continue;
+    }
+    let j = i;
+    while (j + 1 < hours.length && hours[j + 1].pop >= 50) j++;
+    const start = i === 0 ? `${hours[i].time}の時点で雨` : `${hours[i].time}ごろから雨`;
+    const end =
+      j + 1 < hours.length
+        ? `${hours[j + 1].time}ごろにはやみそう`
+        : `${hours[j].time}以降も続きそう`;
+    spans.push(`${start}、${end}`);
+    i = j + 1;
+  }
+  return spans;
+}
